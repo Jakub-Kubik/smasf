@@ -168,24 +168,38 @@ class SimulationManager(NakamotoSimulationManager):
 
         self.run_simulation()
 
-        block_counts = {f"Honest miner {self.honest_miner.miner_id}": 0}
+        block_counts = {f"Honest miner {self.honest_miner.miner_id}": {"weak": 0, "strong": 0}}
         for miner in self.selfish_miners:
-            block_counts.update({f"Selfish miner {miner.miner_id}": 0})
+            block_counts.update({f"Selfish miner {miner.miner_id}": {"weak": 0, "strong": 0}})
 
         for block in self.public_blockchain.chain:
-            block_counts[block.miner] += 1
+            print(block)
+            print(block.__dict__)
+            if block.is_weak:
+                block_counts[block.miner]["weak"] += 1
+            else:
+                block_counts[block.miner]["strong"] += 1
+
+        print(block_counts)
 
         attacker_ids = [
             miner.miner_id for miner in self.selfish_miners
         ]  # List of attacker IDs
         honest_miner_id = self.honest_miner.miner_id  # Honest miner ID
 
-        total_blocks = sum(block_counts.values())
-        percentages = calculate_percentage(block_counts, total_blocks)
+        total_weak_blocks = sum([x["weak"] for x in block_counts.values() if x["weak"]])
+        total_strong_blocks = sum([x["strong"] for x in block_counts.values() if x["strong"]])
+        print(total_weak_blocks)
+        print(total_strong_blocks)
+
+        # 1 of weak to strong block ratio  ins strong block
+        total_reward = (total_weak_blocks / (self.config.weak_to_strong_block_ratio - 1)) + total_strong_blocks
+        print(total_reward)
+        percentages = calculate_percentage(block_counts, total_reward, self.config.weak_to_strong_block_ratio)
         print_attackers_success(block_counts, percentages, self.winns, attacker_ids)
         print_honest_miner_info(block_counts, percentages, self.winns, honest_miner_id)
 
         # self.log.info(block_counts)
         # self.log.info(self.selfish_miners[0].blockchain.chain)
 
-        plot_block_counts(block_counts, self.miners_info)
+        # plot_block_counts(block_counts, self.miners_info)
