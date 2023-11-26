@@ -67,7 +67,7 @@ def float_with_comma(number: float) -> str:
 
 
 def calculate_percentage(
-    block_counts: Dict[str, int], total_blocks: int
+    block_counts: Dict[str, dict], total_blocks: int, ratio: int
 ) -> Dict[str, float]:
     """
     Calculate the percentage of blocks mined by each miner.
@@ -82,7 +82,7 @@ def calculate_percentage(
               of blocks mined as values.
     """
     return {
-        miner: round(block_counts[miner] / total_blocks * 100, 3)
+        miner: round((block_counts[miner]["strong"] + (block_counts[miner]["weak"] / (ratio - 1))) / total_blocks * 100, 3)
         for miner in block_counts
     }
 
