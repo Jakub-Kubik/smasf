@@ -8,6 +8,7 @@ Date: 23.3.2023
 import random
 
 from base.miner_base import MinerType
+from base.miner_base import SelfishMinerAction as SA
 from nakamoto.simulation_manager import SimulationManager as NakamotoSimulationManager
 from public_blockchain_functions import (
     calculate_percentage,
@@ -131,11 +132,27 @@ class SimulationManager(NakamotoSimulationManager):
                 print(
                     f"Strong block generated in round {blocks_mined} by {leader.miner_type}"
                 )
+                print(number_of_strong_blocks)
                 self.one_round(leader, blocks_mined, is_weak_block=False)
                 strong_blocks += 1
 
             if number_of_strong_blocks == self.config.simulation_mining_rounds:
                 break
+
+        match_attackers = self.action_store.get_objects(SA.WAIT)
+        if len(match_attackers) > 0:
+            miner_and_len = list()
+            for miner in match_attackers:
+                chain_len = miner.blockchain.size()
+                miner_and_len.append((miner, chain_len))
+
+            # Find the maximum value
+            max_value = max(obj[1] for obj in miner_and_len)
+            # Filter the attackers with the highest value
+            matching_miners = [obj for obj in miner_and_len if obj[1] == max_value]
+            # Select a random object among the ones with the highest value
+            winner = random.choice(matching_miners)[0]
+            self.public_blockchain.override_chain(winner)
 
         print(f"number of weak blocks: {weak_blocks}")
         print(
