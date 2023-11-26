@@ -103,11 +103,14 @@ class SimulationManager(NakamotoSimulationManager):
         weak_blocks = 0
         strong_blocks = 0
 
-        for blocks_mined in range(self.config.simulation_mining_rounds):
+        number_of_strong_blocks = 0
+        blocks_mined = 0
+        while True:
             leader = self.choose_leader(self.miners, self.miners_info)
             self.winns[leader.miner_id] += 1
 
             random_number = random.random()
+            blocks_mined += 1
             if random_number <= weak_block_probability:
                 print(
                     f"Weak block generated in round {blocks_mined} by {leader.miner_type}"
@@ -124,11 +127,15 @@ class SimulationManager(NakamotoSimulationManager):
                 weak_blocks += 1
 
             else:
+                number_of_strong_blocks += 1
                 print(
                     f"Strong block generated in round {blocks_mined} by {leader.miner_type}"
                 )
                 self.one_round(leader, blocks_mined, is_weak_block=False)
                 strong_blocks += 1
+
+            if number_of_strong_blocks == self.config.simulation_mining_rounds:
+                break
 
         print(f"number of weak blocks: {weak_blocks}")
         print(
