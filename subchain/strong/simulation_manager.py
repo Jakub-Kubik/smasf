@@ -42,6 +42,18 @@ class SimulationManager(NakamotoSimulationManager):
 
         self.public_blockchain = Blockchain(owner="public blockchain")
 
+    def get_max_chain(self):
+        max_chain = self.public_blockchain
+        curr_max = len(self.public_blockchain.chain)
+
+        for miner in self.miners:
+            if miner.miner_type == MinerType.SELFISH:
+                if len(miner.blockchain.chain) >= curr_max:
+                    max_chain = miner.blockchain
+                    curr_max = len(miner.blockchain.chain)
+
+        return max_chain
+
     def parse_config(self, simulation_config: dict) -> SimulationConfig:
         """Parsing dict from yaml config."""
         self.log.info("Subchain parse config method")
@@ -106,12 +118,11 @@ class SimulationManager(NakamotoSimulationManager):
 
         number_of_strong_blocks = 0
         blocks_mined = 0
-        while True:
+        while blocks_mined < self.config.simulation_mining_rounds:
             leader = self.choose_leader(self.miners, self.miners_info)
             self.winns[leader.miner_id] += 1
 
             random_number = random.random()
-            blocks_mined += 1
             if random_number <= weak_block_probability:
                 print(
                     f"Weak block generated in round {blocks_mined} by {leader.miner_type}"
@@ -136,8 +147,7 @@ class SimulationManager(NakamotoSimulationManager):
                 self.one_round(leader, blocks_mined, is_weak_block=False)
                 strong_blocks += 1
 
-            if number_of_strong_blocks == self.config.simulation_mining_rounds:
-                break
+            blocks_mined = len(self.get_max_chain().chain)
 
         match_attackers = self.action_store.get_objects(SA.WAIT)
         if len(match_attackers) > 0:
@@ -173,8 +183,6 @@ class SimulationManager(NakamotoSimulationManager):
             block_counts.update({f"Selfish miner {miner.miner_id}": {"weak": 0, "strong": 0}})
 
         for block in self.public_blockchain.chain:
-            print(block)
-            print(block.__dict__)
             if block.is_weak:
                 block_counts[block.miner]["weak"] += 1
             else:
